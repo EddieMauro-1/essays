@@ -61,6 +61,19 @@ body {
 }
 @keyframes giro { to { transform: rotate(360deg); } }
 
+/* Book mode: two sheets per row, the first one alone on the right. */
+.hojas.libro { display: grid; grid-template-columns: repeat(2, var(--ancho)); justify-content: center; column-gap: 0; row-gap: 22px; }
+.hojas.libro .hoja { margin: 0; }
+.hojas.libro .hoja:first-child { grid-column: 2; }
+.hojas.libro .hoja:nth-child(even)::before,
+.hojas.libro .hoja:nth-child(odd):not(:first-child)::before {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 5%);
+}
+.hojas.libro .hoja:nth-child(odd):not(:first-child)::before { background: linear-gradient(to right, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 5%); }
+.hojas.libro .final { grid-column: 1 / -1; width: min(calc(var(--ancho) * 2), 760px); }
+.contador input.ancho { width: 4.6em; }
+
 .final {
   width: min(var(--ancho), 760px); max-width: calc(100vw - 24px); margin: 28px auto 8px; padding: 28px 24px 26px;
   text-align: center; background: #1d1d1d; border: 1px solid var(--linea); border-radius: 12px;
@@ -88,7 +101,7 @@ body {
 
 @media (max-width: 640px) {
   .barra { gap: 8px; padding: 7px 8px; }
-  .rotulo, #ajustar, .sep { display: none; }
+  .rotulo, #ajustar, #libro, .sep { display: none; }
   .controles { gap: 3px; margin: 0 auto; }
   .controles button { width: 32px; height: 32px; }
   .hojas { padding: 10px 8px 40px; }

@@ -13,7 +13,7 @@
   const $ = id => document.getElementById(id);
   const barra = $('barra'), hojasEl = $('hojas'), inputNum = $('numero');
   const bAnterior = $('anterior'), bSiguiente = $('siguiente'), bAlejar = $('alejar'), bAcercar = $('acercar');
-  const bAjustar = $('ajustar'), bCompleta = $('completa');
+  const bAjustar = $('ajustar'), bCompleta = $('completa'), bLibro = $('libro');
   const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -118,11 +118,12 @@
   }, { rootMargin: '100% 0px' }).observe(final);
 
   const PASOS = [0.5, 0.67, 0.8, 1, 1.2, 1.45, 1.7, 2, 2.5, 3];
-  let paso = 3, modo = 'ancho';
+  let paso = 3, modo = 'ancho', libro = false;
   function base() {
     const w = de.clientWidth, h = window.innerHeight - barra.offsetHeight;
-    if (modo === 'hoja') return Math.max(200, (h - 28) * G.w / G.h);
-    return Math.max(200, Math.min(w - (w < 640 ? 16 : 24), 980));
+    if (modo === 'hoja') return Math.max(160, (h - 28) * G.w / G.h);
+    const util = w - (w < 640 ? 16 : 24);
+    return libro ? Math.max(160, Math.min(util / 2, 700)) : Math.max(200, Math.min(util, 980));
   }
   function posicion() {
     const a = actual(), r = paginas[a - 1].el.getBoundingClientRect();
@@ -147,25 +148,58 @@
   let tRes = 0;
   window.addEventListener('resize', () => { clearTimeout(tRes); const ref = posicion(); tRes = setTimeout(() => { de.style.setProperty('--ancho', `${Math.round(base() * PASOS[paso])}px`); restaurar(ref); }, 120); });
 
-  function actual() {
-    const y = barra.offsetHeight + (window.innerHeight - barra.offsetHeight) * 0.35;
-    let a = 1;
-    for (const p of paginas) { if (p.el.getBoundingClientRect().top <= y) a = p.n; else break; }
-    return a;
+  // Rows of sheets: one sheet per row, or two in book mode (the first one alone).
+  function filas() {
+    const out = [];
+    let top = null;
+    for (const p of paginas) {
+      const t = p.el.offsetTop;
+      if (top === null || Math.abs(t - top) > 2) { out.push([p.n]); top = t; } else out[out.length - 1].push(p.n);
+    }
+    return out;
+  }
+  function filaActual(fs) {
+    const y = window.scrollY + barra.offsetHeight + (window.innerHeight - barra.offsetHeight) * 0.35;
+    let r = 0;
+    for (let i = 0; i < fs.length; i++) { if (paginas[fs[i][0] - 1].el.offsetTop <= y) r = i; else break; }
+    return r;
+  }
+  function actual() { const fs = filas(); return fs[filaActual(fs)][0]; }
+  // While a smooth scroll is still running, the next step counts from its destination, not from the current position.
+  let destino = null, tDestino = 0;
+  function pasoFila(d) {
+    const fs = filas();
+    const desde = destino !== null && Date.now() - tDestino < 700 ? destino : filaActual(fs);
+    destino = Math.min(fs.length - 1, Math.max(0, desde + d)); tDestino = Date.now();
+    irA(fs[destino][0]);
   }
   function irA(a, animar = true) {
     a = Math.min(total, Math.max(1, a | 0));
     window.scrollTo({ top: paginas[a - 1].el.offsetTop - barra.offsetHeight - 10, behavior: animar && suave ? 'smooth' : 'auto' });
   }
   function actualizarContador() {
-    const a = actual();
-    if (document.activeElement !== inputNum) inputNum.value = a;
-    bAnterior.disabled = a <= 1; bSiguiente.disabled = a >= total;
+    const fs = filas(), r = filaActual(fs);
+    if (document.activeElement !== inputNum) inputNum.value = fs[r].join('–');
+    bAnterior.disabled = r <= 0; bSiguiente.disabled = r >= fs.length - 1;
   }
   let pendiente = false;
   window.addEventListener('scroll', () => { if (!pendiente) { pendiente = true; requestAnimationFrame(() => { pendiente = false; actualizarContador(); }); } }, { passive: true });
-  bAnterior.addEventListener('click', () => irA(actual() - 1));
-  bSiguiente.addEventListener('click', () => irA(actual() + 1));
+  bAnterior.addEventListener('click', () => pasoFila(-1));
+  bSiguiente.addEventListener('click', () => pasoFila(1));
+  bLibro.addEventListener('click', () => {
+    const ref = posicion();
+    libro = !libro;
+    hojasEl.classList.toggle('libro', libro);
+    inputNum.classList.toggle('ancho', libro);
+    bLibro.classList.toggle('activo', libro);
+    bLibro.setAttribute('aria-pressed', String(libro));
+    bLibro.title = libro ? 'Ver de a una hoja' : 'Ver de a dos hojas (modo libro)';
+    paso = 3;
+    de.style.setProperty('--ancho', `${Math.round(base() * PASOS[paso])}px`);
+    restaurar(ref);
+    bAlejar.disabled = false; bAcercar.disabled = false;
+    actualizarContador();
+  });
   inputNum.addEventListener('focus', () => inputNum.select());
   inputNum.addEventListener('keydown', e => { if (e.key === 'Enter') { irA(parseInt(inputNum.value, 10) || 1); inputNum.blur(); } });
   inputNum.addEventListener('change', () => irA(parseInt(inputNum.value, 10) || 1));
@@ -190,8 +224,8 @@
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && /^[sp]$/i.test(e.key)) { e.preventDefault(); avisar('Solo lectura en línea.'); return; }
     if (e.target === inputNum || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); irA(actual() + 1); }
-    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); irA(actual() - 1); }
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); pasoFila(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); pasoFila(-1); }
     else if (e.key === 'Home') { e.preventDefault(); irA(1); }
     else if (e.key === 'End') { e.preventDefault(); irA(total); }
     else if (e.key === '+' || e.key === '=') zoom(1);
