@@ -1,0 +1,101 @@
+/* Page viewer. */
+:root {
+  --fondo: #2a2a2a;
+  --barra: rgba(24, 24, 24, 0.94);
+  --tinta: #ece6da;
+  --tinta-suave: #b9b2a5;
+  --linea: rgba(255, 255, 255, 0.13);
+  --teal: #005c58;
+  --teal-claro: #5eaaa5;
+  --terracota: #b34a3a;
+  --ancho: 800px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--fondo); color: var(--tinta);
+  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.barra {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; background: var(--barra); border-bottom: 1px solid var(--linea);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.rotulo { min-width: 0; display: flex; flex-direction: column; }
+.serie { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal-claro); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nombre { font: 600 15px/1.25 Faustina, Georgia, serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.controles { margin-left: auto; display: flex; align-items: center; gap: 4px; flex: none; }
+.controles button {
+  width: 34px; height: 34px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  color: var(--tinta); background: transparent; border: 1px solid var(--linea); border-radius: 8px;
+}
+.controles button:hover { background: rgba(255, 255, 255, 0.08); }
+.controles button:focus-visible, .contador input:focus-visible { outline: 2px solid var(--teal-claro); outline-offset: 1px; }
+.controles button[disabled] { opacity: 0.35; cursor: default; }
+.controles button.activo { border-color: var(--teal-claro); color: var(--teal-claro); }
+.controles svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.contador { display: flex; align-items: center; gap: 5px; margin: 0 2px; color: var(--tinta-suave); font-variant-numeric: tabular-nums; }
+.contador input {
+  width: 2.7em; height: 30px; text-align: center; color: var(--tinta); font: inherit; font-variant-numeric: tabular-nums;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--linea); border-radius: 6px;
+}
+.contador b { font-weight: 400; color: var(--tinta); }
+.sep { width: 1px; height: 22px; margin: 0 5px; background: var(--linea); }
+
+.hojas { width: max-content; min-width: 100%; padding: 16px 12px 48px; }
+.hoja {
+  position: relative; width: var(--ancho); aspect-ratio: 1279 / 1809; margin: 0 auto 16px; overflow: hidden;
+  background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.hoja canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.hoja .tapa { position: absolute; inset: 0; z-index: 1; }
+.hoja:not(.lista)::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px;
+  border: 3px solid #e6e6e6; border-top-color: var(--teal); border-radius: 50%; animation: giro 0.9s linear infinite;
+}
+.hoja.error::after {
+  content: "No se pudo cargar esta hoja. Vuelva a cargar la página."; width: auto; height: auto; margin: 0;
+  left: 10%; right: 10%; top: 45%; border: 0; animation: none; text-align: center; color: #555; font-size: 14px;
+}
+@keyframes giro { to { transform: rotate(360deg); } }
+
+.final {
+  width: min(var(--ancho), 760px); max-width: calc(100vw - 24px); margin: 28px auto 8px; padding: 28px 24px 26px;
+  text-align: center; background: #1d1d1d; border: 1px solid var(--linea); border-radius: 12px;
+}
+.final .libros { display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; }
+.final .libros canvas { width: 23%; max-width: 118px; height: auto; border-radius: 2px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5); }
+.final h2 { margin: 0 0 8px; font: 600 25px/1.2 Faustina, Georgia, serif; }
+.final p { margin: 0 auto 16px; max-width: 34em; color: #d6d0c4; font-size: 15.5px; line-height: 1.55; }
+.boton {
+  display: inline-block; padding: 11px 22px; border-radius: 999px; color: #fff; background: var(--terracota);
+  font-weight: 600; text-decoration: none;
+}
+.boton:hover { background: #9c3e30; }
+.final .otras { margin: 20px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 15px; }
+.final .otras a { color: var(--teal-claro); text-decoration: none; }
+.final .otras a:hover { text-decoration: underline; }
+.final .derechos { margin: 18px auto 0; font-size: 12.5px; color: var(--tinta-suave); }
+
+.aviso {
+  position: fixed; left: 50%; bottom: 18px; z-index: 20; transform: translateX(-50%); max-width: calc(100vw - 32px);
+  padding: 10px 16px; color: var(--tinta); background: #111; border: 1px solid var(--linea); border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); font-size: 14px;
+}
+.sin-js { margin: 40px auto; max-width: 30em; text-align: center; }
+
+@media (max-width: 640px) {
+  .barra { gap: 8px; padding: 7px 8px; }
+  .rotulo, #ajustar, .sep { display: none; }
+  .controles { gap: 3px; margin: 0 auto; }
+  .controles button { width: 32px; height: 32px; }
+  .hojas { padding: 10px 8px 40px; }
+  .hoja { margin-bottom: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .hoja:not(.lista)::after { animation: none; } }
+@media print {
+  body * { display: none !important; }
+  body::before { content: "Solo lectura en línea."; display: block; padding: 40px; color: #000; font: 14pt Georgia, serif; }
+}
