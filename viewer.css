@@ -45,7 +45,7 @@ body {
 
 .hojas { width: max-content; min-width: 100%; padding: 16px 12px 48px; }
 .hoja {
-  position: relative; width: var(--ancho); aspect-ratio: 1279 / 1809; margin: 0 auto 16px; overflow: hidden;
+  position: relative; width: calc(var(--ancho) * var(--k, 1)); aspect-ratio: var(--proporcion, 1279 / 1809); margin: 0 auto 16px; overflow: hidden;
   background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
   -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
@@ -65,6 +65,9 @@ body {
 .hojas.libro { display: grid; grid-template-columns: repeat(2, var(--ancho)); justify-content: center; column-gap: 0; row-gap: 22px; }
 .hojas.libro .hoja { margin: 0; }
 .hojas.libro .hoja:first-child { grid-column: 2; }
+/* Pages narrower than the column (a stapled magazine) stay against the spine. */
+.hojas.libro .hoja:nth-child(even) { justify-self: end; }
+.hojas.libro .hoja:nth-child(odd) { justify-self: start; }
 .hojas.libro .hoja:nth-child(even)::before,
 .hojas.libro .hoja:nth-child(odd):not(:first-child)::before {
   content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;

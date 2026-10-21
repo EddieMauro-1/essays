@@ -2,12 +2,14 @@
 (() => {
   'use strict';
   const D = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(window.D), c => c.charCodeAt(0))));
-  const G = D.g, B = D.b, X = D.x;
+  const B = D.b, X = D.x;
   const L = Object.assign({ blog: '', post: '', libros: '' }, D.l);
   const qs = new URLSearchParams(location.search);
-  const n = D.e[qs.get('e')] ? qs.get('e') : '1';
+  const n = D.e[qs.get('e')] ? qs.get('e') : Object.keys(D.e)[0];
   const E = D.e[n];
+  const G = E.g || D.g;
   const total = E.h;
+  const unica = Object.keys(D.e).length === 1;
   const enMarco = window.self !== window.top;
   const de = document.documentElement;
   const $ = id => document.getElementById(id);
@@ -56,15 +58,20 @@
     return c;
   }
 
-  document.title = `${D.t}. ${X.serie} ${E.p}: ${E.s} · ${X.lectura}`;
-  $('serie').textContent = `${X.serie} ${E.p} · ${D.t}`;
+  document.title = unica ? `${D.t}. ${E.s} · ${X.lectura}` : `${D.t}. ${X.serie} ${E.p}: ${E.s} · ${X.lectura}`;
+  $('serie').textContent = unica ? D.t : `${X.serie} ${E.p} · ${D.t}`;
   $('nombre').textContent = E.s;
   $('total').textContent = total;
+  de.style.setProperty('--proporcion', `${G.w} / ${G.h}`);
 
+  // E.a: page widths when they differ (a stapled magazine, cut at each page's frame); G.w is then the widest page.
+  const anchos = E.a || null;
+  const geoDe = i => anchos ? Object.assign({}, G, { w: anchos[i - 1], c: Math.ceil(anchos[i - 1] / G.tw) }) : G;
   const paginas = [];
   for (let i = 1; i <= total; i++) {
     const el = document.createElement('div');
     el.className = 'hoja'; el.dataset.n = i;
+    if (anchos) { el.style.setProperty('--k', anchos[i - 1] / G.w); el.style.aspectRatio = `${anchos[i - 1]} / ${G.h}`; }
     el.setAttribute('role', 'img'); el.setAttribute('aria-label', `${i} / ${total}`);
     const tapa = document.createElement('div'); tapa.className = 'tapa';
     el.append(tapa); hojasEl.append(el);
@@ -74,7 +81,7 @@
     if (p.estado) return;
     p.estado = 'cargando'; p.el.classList.remove('error');
     try {
-      const c = await recomponer(`p/${n}/${String(p.n).padStart(3, '0')}.jpg?v=${D.v}`, G, fnv1a(`${D.s}|p|${n}|${p.n}`));
+      const c = await recomponer(`p/${n}/${String(p.n).padStart(3, '0')}.jpg?v=${D.v}`, geoDe(p.n), fnv1a(`${D.s}|p|${n}|${p.n}`));
       if (p.estado !== 'cargando') { c.width = 0; return; }
       p.el.prepend(c); p.lienzo = c; p.estado = 'lista'; p.el.classList.add('lista');
     } catch (e) {
@@ -94,17 +101,19 @@
   final.className = 'final';
   const otras = Object.entries(D.e).filter(([k]) => k !== n)
     .map(([k, x]) => `<a href="?e=${k}">${x.p > E.p ? 'Siga con la' : 'Lea la'} ${esc(X.serie.toLowerCase())} ${x.p}: ${esc(x.s)}</a>`);
-  if (!enMarco && (L.post || L.blog)) otras.push(`<a href="${esc(L.post || L.blog)}">Volver al blog</a>`);
-  final.innerHTML = `
+  const volver = E.u || L.post || L.blog;
+  if (!enMarco && volver) otras.push(`<a href="${esc(volver)}">Volver al blog</a>`);
+  // The books block (covers, text, button) only appears in collections that carry the covers (D.b).
+  final.innerHTML = (B ? `
     <div class="libros"></div>
     <h2>${esc(X.libros_titulo)}</h2>
     <p>${esc(X.libros_texto)}</p>
-    <a class="boton" href="${esc(L.libros)}" target="_blank" rel="noopener">${esc(X.libros_boton)}</a>
-    <p class="otras">${otras.join('')}</p>
+    <a class="boton" href="${esc(L.libros)}" target="_blank" rel="noopener">${esc(X.libros_boton)}</a>` : '') + `
+    ${otras.length ? `<p class="otras">${otras.join('')}</p>` : ''}
     <p class="derechos">${esc(X.derechos)}</p>`;
   hojasEl.append(final);
-  let librosListos = false;
-  new IntersectionObserver(async (es, obs) => {
+  let librosListos = !B;
+  if (B) new IntersectionObserver(async (es, obs) => {
     if (librosListos || !es.some(e => e.isIntersecting)) return;
     librosListos = true; obs.disconnect();
     const caja = final.querySelector('.libros');
